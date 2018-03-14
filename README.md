@@ -1,0 +1,1 @@
+# go-manifest-updaterer
