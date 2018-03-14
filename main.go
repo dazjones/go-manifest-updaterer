@@ -1,13 +1,23 @@
 package main
 
 import (
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
 
-	"github.com/smallfish/simpleyaml"
 	"github.com/urfave/cli"
+	yaml "gopkg.in/yaml.v2"
 )
+
+type Manifest struct {
+	Releases []Release `yml: releases`
+}
+type Release struct {
+	Name    string `yml: name`
+	Version string `yml: version`
+	URL     string `yml: url`
+}
 
 func main() {
 	var manifestFile string
@@ -48,16 +58,25 @@ func main() {
 		},
 	}
 	app.Action = func(c *cli.Context) error {
-		d, err := ioutil.ReadFile(manifestFile)
-		data := string(d)
+		source, err := ioutil.ReadFile(manifestFile)
 		if err != nil {
-			log.Fatal(err)
+			log.Println(err)
 		}
+		var manifest Manifest
+		yamlErr := yaml.Unmarshal(source, &manifest)
+		if yamlErr != nil {
+			log.Println(yamlErr)
+		}
+		for i, release := range manifest.Releases {
+			if release.Name == releaseName {
+				manifest.Releases[i].Version = releaseVersion
+				manifest.Releases[i].URL = releaseURL
+			}
+		}
+		var output []byte
+		output, err = yaml.Marshal(&manifest)
+		fmt.Printf("%s", output)
 
-		y, err := simpleyaml.NewYaml(data)
-		if err != nil {
-			log.Fatal(err)
-		}
 		return nil
 	}
 
